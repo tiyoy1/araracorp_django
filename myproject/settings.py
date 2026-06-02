@@ -39,6 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'myapp',
     'araracorp_django',
+    'rest_framework',
+    'pos',
 ]
 
 MIDDLEWARE = [
