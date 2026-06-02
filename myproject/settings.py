@@ -40,7 +40,6 @@ INSTALLED_APPS = [
     'myapp',
     'araracorp_django',
     'rest_framework',
-    'pos',
 ]
 
 MIDDLEWARE = [

@@ -19,8 +19,31 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OrderItem
-        fields = ['id', 'menut_item_name', 'menu_item', 'quantity', 'unit_price', 'subtotal', 'note' ]
+        fields = ['id', 'menu_item_name', 'menu_item', 'quantity', 'unit_price', 'subtotal', 'note' ]
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
     total = serializers.DecimalField(max_digits=8, decimal_places=2, read_only=True)
+
+    class Meta: 
+        model = Order
+        fields = ['id', 'table', 'status', 'notes', 'items', 'total', 'created_at', 'updated_at']
+
+class CreateOrderSerializer(serializers.ModelSerializer):
+    items = OrderItemSerializer(many=True)
+
+    class Meta:
+        model = Order
+        fields = ['table', 'note', 'items']
+
+    def create(self, validated_data):
+        items_data = validated_data.pop('items')
+        order = Order.objects.create(**validated_data)
+        for item in items_data :
+            OrderItem.objects.create(order=order, unit_price=item['menu_item'].price, **item)
+            return order
+        
+class PaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment
+        fields = '__all__'
