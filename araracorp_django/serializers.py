@@ -20,6 +20,9 @@ class OrderItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderItem
         fields = ['id', 'menu_item_name', 'menu_item', 'quantity', 'unit_price', 'subtotal', 'note' ]
+        extra_kwargs = {
+            'unit_price' : {'required' : False}
+        }
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
@@ -27,7 +30,7 @@ class OrderSerializer(serializers.ModelSerializer):
 
     class Meta: 
         model = Order
-        fields = ['id', 'table', 'status', 'notes', 'items', 'total', 'created_at', 'updated_at']
+        fields = ['id', 'table', 'status', 'note', 'items', 'total', 'created_at', 'updated_at']
 
 class CreateOrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True)
@@ -40,10 +43,33 @@ class CreateOrderSerializer(serializers.ModelSerializer):
         items_data = validated_data.pop('items')
         order = Order.objects.create(**validated_data)
         for item in items_data :
-            OrderItem.objects.create(order=order, unit_price=item['menu_item'].price, **item)
+            menu_item = item['menu_item']
+            OrderItem.objects.create(
+                order = order,
+                menu_item = menu_item,
+                quantity = item['quantity'],
+                unit_price = menu_item.price,
+                note = item.get('note', ''  )
+            )
             return order
         
 class PaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
         fields = '__all__'
+        extra_kwargs = {
+            'change' : {'required' : False}
+        }
+
+    def validate(self, data):
+        order = data['order']
+        amount_paid = data['amount_paid']
+        order_total = order.total
+
+        if amount_paid < order_total:
+            raise serializers.ValidationError({
+                'amount_paid' : f"Insufficient payment dude. Order total is {order_total}"
+            })
+        
+        data['change'] = amount_paid - order_total
+        return data
